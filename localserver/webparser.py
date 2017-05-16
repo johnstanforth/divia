@@ -69,5 +69,5 @@ if __name__ == '__main__':
     from utils.config import settings
     settings.load_config_module('webparser', 'DevelopmentConfig')
 
-    srv = settings.LocalServer
+    srv = settings.SERVER_CONFIG
     run(host=srv.host, port=srv.port)
