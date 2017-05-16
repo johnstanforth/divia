@@ -1,0 +1,12 @@
+{
+  ".*": {
+    "name": "Divia.io Web Activity Tracker",
+    "description": "Logs all website access (for future extension auto-load on all pages?)",
+    "parser": "divia_tracker.py"
+  },
+  "eztv.ag": {
+    "name": "EZTV Parser",
+    "description": "Matches torrent listings against internal Tivo Guide",
+    "parser": "eztv_ag.py"
+  }
+}

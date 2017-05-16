@@ -1,0 +1,14 @@
+
+Dev Notes
+=========
+
+
+- Manually installed Python 3.6 on Ubuntu 17.04 (via 'apt install python3.6') but causes many problems
+
+- Not sure which of these worked now, but saving for future reference:
+  sudo apt install python3-pip
+  sudo apt install python3-venv
+  sudo apt install python3-dev
+  sudo apt-get update && sudo apt-get install libssl-dev
+
+
