@@ -4,6 +4,7 @@
 import json
 import os
 from datetime import datetime
+import time
 
 from bs4 import BeautifulSoup
 from pyparsing import alphas, nums, alphanums, Word, Literal, CaselessLiteral, Keyword, Combine, Suppress, ParseResults
@@ -121,7 +122,7 @@ def parse_json(json_data, debug=False):
 # main() entry point
 if __name__ == '__main__':
     from utils.config import settings
-    settings.load_config_module('webparser', 'DevelopmentConfig')
+    settings.load_config_module('webparser', 'PlexServerConfig')
     print('settings.SERVER_CONFIG:', settings.SERVER_CONFIG)
     print('settings.SITEPARSER_eztv:', settings.SITEPARSER_eztv.data_dir)
     print('settings.keys:', settings.keys())
@@ -137,4 +138,7 @@ if __name__ == '__main__':
 
     # test_parsing()
 
-    print('vars=', vars())
+    from utils.network import get_net_interfaces
+    print(get_net_interfaces())
+
+    # print('vars=', vars())
