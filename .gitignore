@@ -3,7 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
-# test data
+# data dirs
+_data/
 _testdata/
 
 

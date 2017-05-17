@@ -11,7 +11,6 @@ from pyparsing import alphas, nums, alphanums, Word, Literal, CaselessLiteral, K
 from utils.human_readable import human2bytes
 
 
-
 def scan_episode_title(title_str, show_title):
     scan_title_str = str(title_str)
     scan_show_title = ''.join(filter(lambda ch: ch not in "():", str(show_title)))
@@ -113,7 +112,8 @@ def parse_json(json_data, debug=False):
     print('Received EZTV page:', json_data['page_url'])
 
     if debug:  # save output to file, to keep re-parsing during development
-        filename = os.path.join(settings.SITEPARSER_eztv.test_data_dir, 'eztv_data.json')
+        filename = 'eztv_raw.{}.json'.format(datetime.strftime(datetime.now(), '%Y%m%d_%H%M%S'))
+        filename = os.path.join(settings.SITEPARSER_eztv.data_dir, filename)
         with open(filename, 'w') as outfile:
             json.dump(json_data, outfile)
 
@@ -123,16 +123,18 @@ if __name__ == '__main__':
     from utils.config import settings
     settings.load_config_module('webparser', 'DevelopmentConfig')
     print('settings.SERVER_CONFIG:', settings.SERVER_CONFIG)
-    print('settings.SITEPARSER_eztv:', settings.SITEPARSER_eztv.test_data_dir)
+    print('settings.SITEPARSER_eztv:', settings.SITEPARSER_eztv.data_dir)
     print('settings.keys:', settings.keys())
 
 
     def test_parsing():
-        filename = os.path.join(settings.SITEPARSER_eztv.test_data_dir, 'eztv_data.json')
+        filename = os.path.join(settings.SITEPARSER_eztv.data_dir, 'eztv_data.json')
         with open(filename, encoding='utf-8') as infile:
             eztv_data = json.load(infile)
 
         print('Parsing page: {}'.format(eztv_data['page_url']))
         parse_eztv_page(eztv_data['page_source'])
 
-    test_parsing()
+    # test_parsing()
+
+    print('vars=', vars())
