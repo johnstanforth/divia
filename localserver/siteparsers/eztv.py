@@ -1,5 +1,5 @@
 # ====================================================================================================
-#  eztv_ag.py :: siteparser-handler module for TV episode listings on EZTV.ag
+#  eztv.py :: siteparser-handler module for TV episode listings on EZTV.ag
 # ====================================================================================================
 import os
 import json

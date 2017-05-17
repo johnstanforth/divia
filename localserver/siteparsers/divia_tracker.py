@@ -1,5 +1,3 @@
-# Divia WebParser
-# siteparser for: EZTV.ag
 import datetime
 
 

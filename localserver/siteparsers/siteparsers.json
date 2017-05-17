@@ -6,7 +6,7 @@
   },
   "eztv.ag": {
     "name": "EZTV Parser",
-    "description": "Matches torrent listings against internal Tivo Guide",
-    "parser": "eztv_ag.py"
+    "description": "Parses html from eztv.ag to parse tv show listings",
+    "parser": "eztv.py"
   }
 }
