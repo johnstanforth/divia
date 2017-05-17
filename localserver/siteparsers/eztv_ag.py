@@ -1,10 +1,10 @@
 # ====================================================================================================
 #  eztv_ag.py :: siteparser-handler module for TV episode listings on EZTV.ag
 # ====================================================================================================
-import json
 import os
+import json
 from datetime import datetime
-import time
+from glob import glob
 
 from bs4 import BeautifulSoup
 from pyparsing import alphas, nums, alphanums, Word, Literal, CaselessLiteral, Keyword, Combine, Suppress, ParseResults
@@ -34,7 +34,7 @@ def scan_episode_title(title_str, show_title):
     title_grammar = episode_index | res | tv_source | distrib | flags | ripper | Suppress(junk)
 
     # define a parse action that updates our extended_info dictionary
-    def update_info(tokens):
+    def update_info(scan_str, pos, tokens):
         name = tokens.getName()
         if name:
             extended_info[name] = tokens[name]
@@ -51,6 +51,7 @@ def scan_episode_title(title_str, show_title):
     if remainder and remainder in scan_title_str:
         extended_info['_extra'] = remainder
 
+    # print(extended_info)
     return extended_info
 
 
@@ -119,6 +120,28 @@ def parse_json(json_data, debug=False):
             json.dump(json_data, outfile)
 
 
+def parse_raw_file(parse_file=None):
+    # TODO: Implement parse_file so that we can pass in command-line argument with specific filename
+    # TODO: Otherwise, default to asking the user what they want (currently the only option)
+
+    # TODO: Debug why absolute path doesn't work for glob?? => Then use data_dir setting
+    glob_search = '/'.join((settings.SITEPARSER_eztv.data_dir, '*'))
+    file_list = [f for f in reversed(sorted(glob('../../_data/eztv_*.json')))]
+    display_list = [os.path.basename(f) for f in file_list]
+
+    if file_list:
+        print('')
+        for i, f in enumerate(display_list):
+            print('[{}] {}'.format(i+1, f))
+        file_index = int(input('    => Select file to parse: ')) - 1  # offset for enumerate() above
+        with open(file_list[file_index], encoding='utf-8') as infile:
+            eztv_data = json.load(infile)
+            print('Parsing page: {}'.format(eztv_data['page_url']))
+            parse_eztv_page(eztv_data['page_source'])
+    else:
+        print('=> No eztv_data files found')
+
+
 # main() entry point
 if __name__ == '__main__':
     from utils.config import settings
@@ -127,18 +150,8 @@ if __name__ == '__main__':
     print('settings.SITEPARSER_eztv:', settings.SITEPARSER_eztv.data_dir)
     print('settings.keys:', settings.keys())
 
-
-    def test_parsing():
-        filename = os.path.join(settings.SITEPARSER_eztv.data_dir, 'eztv_data.json')
-        with open(filename, encoding='utf-8') as infile:
-            eztv_data = json.load(infile)
-
-        print('Parsing page: {}'.format(eztv_data['page_url']))
-        parse_eztv_page(eztv_data['page_source'])
-
-    # test_parsing()
-
     from utils.network import get_net_interfaces
-    print(get_net_interfaces())
+    print('net_ifc:', get_net_interfaces())
 
-    # print('vars=', vars())
+    parse_raw_file()
+
