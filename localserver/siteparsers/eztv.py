@@ -10,6 +10,10 @@ from bs4 import BeautifulSoup
 from pyparsing import alphas, nums, alphanums, Word, Literal, CaselessLiteral, Keyword, Combine, Suppress, ParseResults
 
 from utils.human_readable import human2bytes
+from eztv_database import EZTV_Database
+
+# temporarily
+eztv_db = None
 
 
 def scan_episode_title(title_str, show_title):
@@ -93,8 +97,8 @@ def parse_eztv_page(html_source):
         if ext_info:
             data.update(ext_info)
 
-        if data.get('res', None) in ('720p', '1080p'):
-            print('=> Found "{}" with {} seeders ({})'.format(data['episode_title'], data['seeds'], data['filesize_str']))
+        #if data.get('res', None) in ('720p', '1080p'):
+        #    print('=> Found "{}" with {} seeders ({})'.format(data['episode_title'], data['seeds'], data['filesize_str']))
         return data
 
     # find H1 tag for the start of the torrent listing
@@ -108,6 +112,7 @@ def parse_eztv_page(html_source):
             save_the_date = parse_date(columns)
         elif len(columns) == 7:
             episode_data = parse_episode_line(columns)
+            eztv_db.add_tv_file(episode_data)
 
 
 def parse_json(json_data, debug=False):
@@ -121,25 +126,31 @@ def parse_json(json_data, debug=False):
 
 
 def parse_raw_file(parse_file=None):
-    # TODO: Implement parse_file so that we can pass in command-line argument with specific filename
-    # TODO: Otherwise, default to asking the user what they want (currently the only option)
 
-    # TODO: Debug why absolute path doesn't work for glob?? => Then use data_dir setting
-    glob_search = '/'.join((settings.SITEPARSER_eztv.data_dir, '*'))
-    file_list = [f for f in reversed(sorted(glob('../../_data/eztv_*.json')))]
-    display_list = [os.path.basename(f) for f in file_list]
-
-    if file_list:
-        print('')
-        for i, f in enumerate(display_list):
-            print('[{}] {}'.format(i+1, f))
-        file_index = int(input('    => Select file to parse: ')) - 1  # offset for enumerate() above
-        with open(file_list[file_index], encoding='utf-8') as infile:
+    if parse_file:  # exact file specified
+        with open(parse_file, encoding='utf-8') as infile:
             eztv_data = json.load(infile)
-            print('Parsing page: {}'.format(eztv_data['page_url']))
+            print('+ Parsing page: {}'.format(eztv_data['page_url']))
             parse_eztv_page(eztv_data['page_source'])
-    else:
-        print('=> No eztv_data files found')
+
+    else:  # launch command-line prompt to ask user
+
+        # TODO: Debug why absolute path doesn't work for glob?? => Then use data_dir setting
+        """glob_search = '/'.join((settings.SITEPARSER_eztv.data_dir, '*'))"""
+        file_list = [f for f in reversed(sorted(glob('../../_data/eztv_*.json')))]
+        display_list = [os.path.basename(f) for f in file_list]
+
+        if file_list:
+            print('')
+            for i, f in enumerate(display_list):
+                print('[{}] {}'.format(i+1, f))
+            file_index = int(input('    => Select file to parse: ')) - 1  # offset for enumerate() above
+            with open(file_list[file_index], encoding='utf-8') as infile:
+                eztv_data = json.load(infile)
+                print('Parsing page: {}'.format(eztv_data['page_url']))
+                parse_eztv_page(eztv_data['page_source'])
+        else:
+            print('=> No eztv_data files found')
 
 
 # main() entry point
@@ -153,5 +164,23 @@ if __name__ == '__main__':
     from utils.network import get_net_interfaces
     print('net_ifc:', get_net_interfaces())
 
-    parse_raw_file()
+    #global eztv_db
+    eztv_db = EZTV_Database(config=settings)
+    eztv_db.update_show_subscriptions(json_file='../../_data/show_subscriptions.json')
 
+    i = 0
+    for k, v in eztv_db.TV_SHOWS.items():
+        i += 1
+        print('    . show {}: {}  => {}'.format(i, v.show_title, v))
+        #print('    "{}",'.format(k))
+
+    j = 0
+    for k, v in eztv_db.TV_FILES.items():
+        j += 1
+        print('    . file {}: {}  => {}'.format(j, k, v))
+
+
+    parse_raw_file(parse_file='../../_data/eztv_data.json')
+
+    # ABSOLUTELY REQUIRED, DON'T FORGET!!
+    eztv_db.close()
