@@ -66,12 +66,13 @@ class TV_File(object):
 # class to encapsulate all EZTV tv show logic & persistence
 class EZTV_Database(object):
 
-    def __init__(self, config=None):
+    def __init__(self, config=None, update_subscriptions=True):
         self.settings = config
         self.TABLES = {'TV_SHOWS', 'TV_FILES'}
         self.shows_subscribed = set()
         self.shows_on_watchlist = set()
         self.setup_databases()
+        self.flag_update_subscriptions = update_subscriptions
 
     # helper function to streamline creation of multiple shelves
     def open_shelve(self, db_name):
@@ -94,13 +95,13 @@ class EZTV_Database(object):
                 getattr(self, table_name).close()
         print('- db_shelves closed')
 
-    def save(self, object_to_shelve):
-        """
-        Not sure about this yet, with writeback=True now... but will that work
-        well enough for sub-dictionary updates, to still trigger the cache writeback?
-        """
-        if isinstance(object_to_shelve, TV_Show):
-            self.TV_SHOWS[object_to_shelve.show_title] = object_to_shelve
+    def __enter__(self):
+        if self.flag_update_subscriptions:
+            self.update_show_subscriptions(json_file='../../_data/show_subscriptions.json')
+        return self
+
+    def __exit__(self, *args):
+        self.close()
 
     def find_tv_show(self, show_title, create_new=True):
         tvshow_key = str(show_title).upper()

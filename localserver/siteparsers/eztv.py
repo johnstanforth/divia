@@ -12,9 +12,6 @@ from pyparsing import alphas, nums, alphanums, Word, Literal, CaselessLiteral, K
 from utils.human_readable import human2bytes
 from eztv_database import EZTV_Database
 
-# temporarily
-eztv_db = None
-
 
 def scan_episode_title(title_str, show_title):
     scan_title_str = str(title_str)
@@ -164,23 +161,24 @@ if __name__ == '__main__':
     from utils.network import get_net_interfaces
     print('net_ifc:', get_net_interfaces())
 
-    #global eztv_db
-    eztv_db = EZTV_Database(config=settings)
-    eztv_db.update_show_subscriptions(json_file='../../_data/show_subscriptions.json')
+    # NEW! Use as ContextManager so that it auto-closes persistent shelves
+    with EZTV_Database(config=settings) as eztv_db:
 
-    i = 0
-    for k, v in eztv_db.TV_SHOWS.items():
-        i += 1
-        print('    . show {}: {}  => {}'.format(i, v.show_title, v))
-        #print('    "{}",'.format(k))
+        # Not needed with ContextManager-- it will auto-update subscriptions unless told not to;
+        # however, still needed if you manually create the EZTV_Database class for some reason
+        # (in which case, you should probably just call __enter__ and __exit__ manually anyway)
+        #eztv_db.update_show_subscriptions(json_file='../../_data/show_subscriptions.json')
 
-    j = 0
-    for k, v in eztv_db.TV_FILES.items():
-        j += 1
-        print('    . file {}: {}  => {}'.format(j, k, v))
+        # print all tv shows-- don't use keys() because they're str().upper()
+        for i, v in enumerate(eztv_db.TV_SHOWS.values(), start=1):
+            print('    . show {}: {}  => {}'.format(i, v.show_title, v))
 
+        # print all tv_file listings (could use keys(), but not needed)
+        for i, v in enumerate(eztv_db.TV_FILES.values(), start=1):
+            print('    # {}: {}'.format(i, v))
 
-    parse_raw_file(parse_file='../../_data/eztv_data.json')
+        parse_raw_file(parse_file='../../_data/eztv_data.json')
 
-    # ABSOLUTELY REQUIRED, DON'T FORGET!!
-    eztv_db.close()
+        # no longer needed... auto-closed by ContextManager
+        # eztv_db.close()
+
