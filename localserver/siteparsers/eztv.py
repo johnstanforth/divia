@@ -56,7 +56,12 @@ def scan_episode_title(title_str, show_title):
     return extended_info
 
 
-def parse_eztv_page(html_source):
+def parse_tvfiles_from_html(html_source):
+    """
+    parse_tvfiles_from_html() is now a generator function to yield each line of the parsed page,
+    for database handling elsewhere.  (This lets us avoid putting EZTV_Database calls in
+    this function, and lets this function focus only on parsing.)
+    """
     soup = BeautifulSoup(html_source, 'html.parser')
     save_the_date = None
 
@@ -83,7 +88,7 @@ def parse_eztv_page(html_source):
         data = {'show_title': show_title[:-8] if show_title.endswith(' Torrent') else show_title,
                 'episode_title': column_data[1].text.strip(),
                 'magnet': magnet_tag.get('href'),
-                'torrent': tz_tag.get('href'),
+                'torrent': tz_tag.get('href') if tz_tag else None,
                 'filesize_str': fs_str,
                 'filesize_int': fs_int,
                 'seeds': num_seeds,
@@ -94,8 +99,6 @@ def parse_eztv_page(html_source):
         if ext_info:
             data.update(ext_info)
 
-        #if data.get('res', None) in ('720p', '1080p'):
-        #    print('=> Found "{}" with {} seeders ({})'.format(data['episode_title'], data['seeds'], data['filesize_str']))
         return data
 
     # find H1 tag for the start of the torrent listing
@@ -109,17 +112,25 @@ def parse_eztv_page(html_source):
             save_the_date = parse_date(columns)
         elif len(columns) == 7:
             episode_data = parse_episode_line(columns)
-            eztv_db.add_tv_file(episode_data)
+            yield episode_data
 
 
-def parse_json(json_data, debug=False):
+def parse_json(json_data, debug=True):
     print('Received EZTV page:', json_data['page_url'])
+
+    from utils.config import settings
+    settings.load_config_module('webparser', 'DevelopmentConfig')
 
     if debug:  # save output to file, to keep re-parsing during development
         filename = 'eztv_raw.{}.json'.format(datetime.strftime(datetime.now(), '%Y%m%d_%H%M%S'))
         filename = os.path.join(settings.SITEPARSER_eztv.data_dir, filename)
         with open(filename, 'w') as outfile:
             json.dump(json_data, outfile)
+
+    # parse tv_file lines and add each to EZTV_Database
+    with EZTV_Database(config=settings) as eztv_db:
+        for episode_data in parse_tvfiles_from_html(json_data['page_source']):
+            eztv_db.add_tv_file(episode_data)
 
 
 def parse_raw_file(parse_file=None):
@@ -153,7 +164,7 @@ def parse_raw_file(parse_file=None):
 # main() entry point
 if __name__ == '__main__':
     from utils.config import settings
-    settings.load_config_module('webparser', 'PlexServerConfig')
+    settings.load_config_module('webparser', 'DevelopmentConfig')
     print('settings.SERVER_CONFIG:', settings.SERVER_CONFIG)
     print('settings.SITEPARSER_eztv:', settings.SITEPARSER_eztv.data_dir)
     print('settings.keys:', settings.keys())
@@ -177,7 +188,8 @@ if __name__ == '__main__':
         for i, v in enumerate(eztv_db.TV_FILES.values(), start=1):
             print('    # {}: {}'.format(i, v))
 
-        parse_raw_file(parse_file='../../_data/eztv_data.json')
+        # TODO: FIX THIS, with new generator model!
+        # TODO: BROKEN: parse_raw_file(parse_file='../../_data/eztv_data.json')
 
         # no longer needed... auto-closed by ContextManager
         # eztv_db.close()

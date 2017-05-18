@@ -68,6 +68,7 @@ class EZTV_Database(object):
 
     def __init__(self, config=None, update_subscriptions=True):
         self.settings = config
+        self.dir_path = '../_data'  # MANUAL DEFINE FOR NOW
         self.TABLES = {'TV_SHOWS', 'TV_FILES'}
         self.shows_subscribed = set()
         self.shows_on_watchlist = set()
@@ -78,9 +79,7 @@ class EZTV_Database(object):
     def open_shelve(self, db_name):
         # TODO: Why are absolute paths not working???
         #dir_path = self.settings.SITEPARSER_eztv.data_dir
-        dir_path = '../../_data'
-        # print(dir_path, db_name)
-        return shelve.open(os.path.join(dir_path, db_name), protocol=4, writeback=True)
+        return shelve.open(os.path.join(self.dir_path, db_name), protocol=4, writeback=True)
 
     def setup_databases(self):
         for table_name in self.TABLES:
@@ -97,7 +96,7 @@ class EZTV_Database(object):
 
     def __enter__(self):
         if self.flag_update_subscriptions:
-            self.update_show_subscriptions(json_file='../../_data/show_subscriptions.json')
+            self.update_show_subscriptions(json_file=os.path.join(self.dir_path, 'show_subscriptions.json'))
         return self
 
     def __exit__(self, *args):
@@ -131,7 +130,7 @@ class EZTV_Database(object):
             return (False, new_episode)
 
     def find_tv_file(self, file_info):
-        filename = file_info['torrent'].split('/')[-1]
+        filename = file_info['torrent'].split('/')[-1] if file_info['torrent'] else file_info['episode_title']
         if str(filename).endswith('.torrent'):
             filename = filename[0:-8]
         try:
@@ -165,7 +164,7 @@ class EZTV_Database(object):
             return False  # found pre-existing file
 
     def queue_tv_file_download(self, tv_file):
-        with open('../../_data/download_queue.txt', 'a') as queue_file:
+        with open(os.path.join(self.dir_path, 'download_queue.txt'), 'a') as queue_file:
             queue_file.write(tv_file.file_info['torrent'])
             queue_file.write('\n')
             tv_file.queue_for_download = True
