@@ -175,11 +175,6 @@ if __name__ == '__main__':
     # NEW! Use as ContextManager so that it auto-closes persistent shelves
     with EZTV_Database(config=settings) as eztv_db:
 
-        # Not needed with ContextManager-- it will auto-update subscriptions unless told not to;
-        # however, still needed if you manually create the EZTV_Database class for some reason
-        # (in which case, you should probably just call __enter__ and __exit__ manually anyway)
-        #eztv_db.update_show_subscriptions(json_file='../../_data/show_subscriptions.json')
-
         # print all tv shows-- don't use keys() because they're str().upper()
         for i, v in enumerate(eztv_db.TV_SHOWS.values(), start=1):
             print('    . show {}: {}  => {}'.format(i, v.show_title, v))
@@ -189,7 +184,7 @@ if __name__ == '__main__':
             print('    # {}: {}'.format(i, v))
 
         # TODO: FIX THIS, with new generator model!
-        # TODO: BROKEN: parse_raw_file(parse_file='../../_data/eztv_data.json')
+        # TODO: [BROKEN] parse_raw_file(parse_file='../../_data/eztv_data.json')
 
         # no longer needed... auto-closed by ContextManager
         # eztv_db.close()

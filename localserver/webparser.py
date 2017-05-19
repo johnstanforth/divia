@@ -69,5 +69,18 @@ if __name__ == '__main__':
     from utils.config import settings
     settings.load_config_module('webparser', 'DevelopmentConfig')
 
-    srv = settings.SERVER_CONFIG
-    run(host=srv.host, port=srv.port)
+    from siteparsers.eztv_database import EZTV_Database
+    with EZTV_Database(config=settings) as eztv_db:
+
+        # print all tv shows-- don't use keys() because they're str().upper()
+        #for i, v in enumerate(eztv_db.TV_SHOWS.values(), start=1):
+        #    print('    {}: "{}"  => {}'.format(i, v.show_title, v))
+
+        # print all SUBSCRIBED shows
+        #eztv_db.update_show_subscriptions()
+        print('* searching for show subscriptions...')
+        for i, v in enumerate(eztv_db.shows_subscribed, start=1):
+            print('    . subscribed {}: "{}"'.format(i, v))
+
+    # srv = settings.SERVER_CONFIG
+    # run(host=srv.host, port=srv.port)

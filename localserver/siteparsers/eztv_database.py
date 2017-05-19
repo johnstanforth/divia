@@ -2,8 +2,6 @@ import json
 import os
 import shelve
 
-from datetime import datetime
-
 
 # -------------------------------------------------------------------
 #  Schema for database objects (stored in shelves)
@@ -32,13 +30,12 @@ class TV_Show_Episode(object):
 
     def __repr__(self):
         if self.episode_title:
-            return 'Episode[ S{0:0>2}E{0:0>2}: "{}" ]'.format(self.episode_id[0],
-                                                              self.episode_id[1],
-                                                              self.episode_title)
+            return 'Episode[S{0:0>2}E{0:0>2}: "{}"]'.format(self.episode_id[0],
+                                                            self.episode_id[1],
+                                                            self.episode_title)
         else:
-            return 'Episode[ S{0:0>2}E{0:0>2} ]'.format(self.episode_id[0],
-                                                        self.episode_id[1])
-
+            return 'Episode[S{0:0>2}E{0:0>2}]'.format(self.episode_id[0],
+                                                      self.episode_id[1])
 
     def __details__(self):
         if self.episode_title:
@@ -66,27 +63,40 @@ class TV_File(object):
 # class to encapsulate all EZTV tv show logic & persistence
 class EZTV_Database(object):
 
-    def __init__(self, config=None, update_subscriptions=True):
+    def __init__(self, config=None):
         self.settings = config
         self.dir_path = '../_data'  # MANUAL DEFINE FOR NOW
-        self.TABLES = {'TV_SHOWS', 'TV_FILES'}
-        self.shows_subscribed = set()
-        self.shows_on_watchlist = set()
+        self.TABLES = {'EZTV_DATA_OBJECTS', 'TV_SHOWS', 'TV_FILES'}
         self.setup_databases()
-        self.flag_update_subscriptions = update_subscriptions
 
     # helper function to streamline creation of multiple shelves
-    def open_shelve(self, db_name):
+    def open_shelf(self, db_name):
         # TODO: Why are absolute paths not working???
         #dir_path = self.settings.SITEPARSER_eztv.data_dir
         return shelve.open(os.path.join(self.dir_path, db_name), protocol=4, writeback=True)
 
+    def load_eztv_data_object(self, object_name, default=None):
+        try:
+            obj = self.EZTV_DATA_OBJECTS[object_name]
+            setattr(self, object_name, obj)
+        except KeyError:
+            if default:
+                self.EZTV_DATA_OBJECTS[object_name] = default
+                setattr(self, object_name, self.EZTV_DATA_OBJECTS[object_name])
+
+    def save_eztv_data_object(self, object_name):
+        self.EZTV_DATA_OBJECTS[object_name] = getattr(self, object_name)
+
     def setup_databases(self):
         for table_name in self.TABLES:
             table_filename = 'db_' + table_name.lower()
-            table_ptr = self.open_shelve(table_filename)
+            table_ptr = self.open_shelf(table_filename)
             setattr(self, table_name, table_ptr)
             print('- db_shelf "{}" now online: file "{}"'.format(table_name, table_filename))
+
+        # loads custom data objects from db_shelf
+        self.load_eztv_data_object('shows_subscribed', default=set())
+        self.load_eztv_data_object('shows_on_watchlist', default=set())
 
     def close(self):
         for table_name in self.TABLES:  # loop through and close() all shelves!
@@ -95,8 +105,6 @@ class EZTV_Database(object):
         print('- db_shelves closed')
 
     def __enter__(self):
-        if self.flag_update_subscriptions:
-            self.update_show_subscriptions(json_file=os.path.join(self.dir_path, 'show_subscriptions.json'))
         return self
 
     def __exit__(self, *args):
@@ -153,15 +161,13 @@ class EZTV_Database(object):
             is_exists, tv_file = self.find_tv_file(file_info)
             if not is_exists:  # just created, not pre-existing
                 episode.file_list.append(tv_file.filename)
-
                 if show.is_subscribed:  # support TV_Show subscriptions!
                     print('  - found subscription for:', show.show_title)
                     self.queue_tv_file_download(tv_file)
-
                 return True  # inversion: add_tv_file() is True if just added
 
             print('- found tv_file already previously indexed:', tv_file.filename)
-            return False  # found pre-existing file
+            return False  # NOT created, because we found pre-existing file
 
     def queue_tv_file_download(self, tv_file):
         with open(os.path.join(self.dir_path, 'download_queue.txt'), 'a') as queue_file:
@@ -171,6 +177,9 @@ class EZTV_Database(object):
             print('  - queued tv_file "{}" for download'.format(tv_file.filename))
 
     def update_show_subscriptions(self, json_file=None):
+        if not json_file:
+            json_file = os.path.join(self.dir_path, 'show_subscriptions.json')
+
         with open(json_file, encoding='utf-8') as infile:
             subscription_data = json.load(infile)
             print('+ Processing "shows_subscribed" from {}...'.format(json_file))
@@ -178,9 +187,10 @@ class EZTV_Database(object):
                 self.shows_subscribed.add(str(show_name).upper())
                 # TODO: This wll add/update the dbshelf, but need different way to *remove* subscription
                 found, tv_show = self.find_tv_show(show_name, create_new=False)
-                if found:
+                if found and not tv_show.is_subscribed:
                     tv_show.is_subscribed = True
                     print('  - Subscribed to show "{}"'.format(tv_show.show_title))
-                else:
+                elif not found:
                     print('  - Warning: Subscription to "{}" IGNORED... TV_Show not found'.format(show_name))
 
+        self.save_eztv_data_object('shows_subscribed')
