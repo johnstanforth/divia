@@ -169,7 +169,7 @@ if __name__ == '__main__':
     print('settings.SITEPARSER_eztv:', settings.SITEPARSER_eztv.data_dir)
     print('settings.keys:', settings.keys())
 
-    from utils.network import get_net_interfaces
+    from utils.network_utils import get_net_interfaces
     print('net_ifc:', get_net_interfaces())
 
     # NEW! Use as ContextManager so that it auto-closes persistent shelves
