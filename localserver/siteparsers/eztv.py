@@ -9,7 +9,7 @@ from glob import glob
 from bs4 import BeautifulSoup
 from pyparsing import alphas, nums, alphanums, Word, Literal, CaselessLiteral, Keyword, Combine, Suppress, ParseResults
 
-from utils.human_readable import human2bytes
+from utils.string_utils import human2bytes
 from eztv_database import EZTV_Database
 
 

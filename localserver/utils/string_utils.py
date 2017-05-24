@@ -18,6 +18,7 @@ SYMBOLS = {
                        'zebi', 'yobi'),
 }
 
+
 def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
     """
     Convert n bytes into a human readable string based on format.
@@ -67,6 +68,7 @@ def bytes2human(n, format='%(value).1f %(symbol)s', symbols='customary'):
             value = float(n) / prefix[symbol]
             return format % locals()
     return format % dict(symbol=symbols[0], value=n)
+
 
 def human2bytes(s):
     """

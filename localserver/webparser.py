@@ -5,14 +5,20 @@ import json
 import re
 
 import bottle
-import sys
 
+# TODO: Should this be in Config setting?
 bottle.BaseRequest.MEMFILE_MAX = 10 * 1024 * 1024  # 10MB in bytes
 from bottle import route, run, template, get, post, request
 
 
 # function to programmatically load siteparser modules as URL handlers
 def load_siteparsers_map():
+
+    # TODO: Rewrite Siteparsers logic to use metaclass with singleton factory,
+    # TODO: so that, only a single instance is created for each class, on-demand.
+    # TODO: Then use shelve() to save/cache objects for much faster load/reload.
+    # TODO: Use the reload-on-changed (like .pyc) logic from the new Config system.
+
     with open('./siteparsers/siteparsers.json', encoding='utf-8') as config_file:
         config_data = json.load(config_file)
 
@@ -66,21 +72,21 @@ def parse_webpage():
 
 # main() entry point
 if __name__ == '__main__':
-    from utils.config import settings
-    settings.load_config_module('webparser', 'DevelopmentConfig')
 
-    from siteparsers.eztv_database import EZTV_Database
-    with EZTV_Database(config=settings) as eztv_db:
+    from divia_config.webparser import DevelopmentConfig
+    settings = DevelopmentConfig()
+    settings.save_json(filename='_debug_config.json', dir_path='~/.divia/divia_webparser')
 
-        # print all tv shows-- don't use keys() because they're str().upper()
-        #for i, v in enumerate(eztv_db.TV_SHOWS.values(), start=1):
-        #    print('    {}: "{}"  => {}'.format(i, v.show_title, v))
+    # TODO: Update EZTV module to use new Config system, and update this webserver to use
+    # TODO: the new EZTV module correctly (currently broken references, used for __main__ block)
+    # from siteparsers.eztv_database import EZTV_Database
 
-        # print all SUBSCRIBED shows
-        #eztv_db.update_show_subscriptions()
-        print('* searching for show subscriptions...')
-        for i, v in enumerate(eztv_db.shows_subscribed, start=1):
-            print('    . subscribed {}: "{}"'.format(i, v))
+    print('==============================================================================!!!')
+    # print(settings.as_dict(recursive=True, _values=False))
+    print(settings.as_pprint())
 
-    # srv = settings.SERVER_CONFIG
-    # run(host=srv.host, port=srv.port)
+    print('==============================================================================!!!')
+
+    srv = settings.parse_server
+    run(host=srv.host(), port=srv.port())
+
