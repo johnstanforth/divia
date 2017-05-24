@@ -1,4 +1,3 @@
-import os
 import json
 
 from utils.file_utils import expand_filename
@@ -28,7 +27,6 @@ class ConfigNode(object):
     def __getattr__(self, item):
         if '.' in item:
             subnode = self.find_subnode(item)
-            # print('\t\t[{}] found subnode: {} for {!r}'.format(self._name, subnode, item))
             return subnode
         # print('\t[{}] creating new node: {!r}'.format(self._name, item))
         self._superset(item, ConfigNode(name=item))
@@ -50,11 +48,8 @@ class ConfigNode(object):
     def as_dict(self, recursive=False, _values=False):
         if recursive:
             var_dict = {}
-            # print('\t\t\t found=> *****', self.__dict__)
             for k, v in self.__dict__.items():
                 if isinstance(v, ConfigNode):
-                    # print('\t\t as_dict()=> *****', v)
-                    # print('\t\t\t len=> *****', len(v))
                     if len(v) == 0 and not _values:
                         var_dict[k] = v._value
                     else:
@@ -76,8 +71,7 @@ class ConfigNode(object):
         if kwargs.get('as_dict', False):
             return {varname: getattr(self, varname)._value for varname in args} if len(args) else self.as_dict()
         # otherwise, return a list of args, or a single _value
-        asdf = [getattr(self, varname)._value for varname in args] if len(args) else self._value
-        return asdf
+        return [getattr(self, varname)._value for varname in args] if len(args) else self._value
 
     def __getitem__(self, item):
         # print("\t[{}] getting item for {!r}".format(self._name, item))
@@ -127,7 +121,6 @@ class ConfigManager(object):
 
     @classmethod
     def _save_json(cls, root_node, *args, **kwargs):
-        # print('\tsaving json:', args, kwargs, '\n')
         filename = expand_filename(**kwargs)
         if not filename:
             raise Exception('ConfigManager._save_json(): Invalid filename')
@@ -160,8 +153,7 @@ class ConfigManager(object):
     def __autoload_parse_json(cls, target_node, *args, **kwargs):
 
         def load_json_file(fn=None):
-            filename = expand_filename(**kwargs, file=fn) if fn else expand_filename(**kwargs)
-            # print('\t\t*** getting fn:', filename)
+            filename = expand_filename(**kwargs, filename=fn) if fn else expand_filename(**kwargs)
             with open(filename, 'r') as json_file:
                 json_data = json.load(json_file)
                 cls._load_dict(json_data, node=target_node)
@@ -176,6 +168,8 @@ class ConfigManager(object):
             load_json_file(kwargs.pop('filename'))
 
         if 'files' in kwargs:
+            if not isinstance(kwargs.get('files'), list) and not isinstance(kwargs.get('files'), tuple):
+                raise Exception('__autoload_parse_json(): {files} keyword arg must be LIST or TUPLE only')
             for fn in kwargs.pop('files'):
                 load_json_file(fn)
 
