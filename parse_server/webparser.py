@@ -77,17 +77,7 @@ if __name__ == '__main__':
     # TODO: just manually set/extend the PYTHON_PATH itself at that point if they wanted, right?
 
     from divia_config.webparser import DevelopmentConfig
-    settings = DevelopmentConfig()
-    settings.save_json(filename='_debug_config.json', dir_path=settings.parse_server.debug.dir_path())
-
-    # TODO: Update EZTV module to use new Config system, and update this webserver to use
-    # TODO: the new EZTV module correctly (currently broken references, used for __main__ block)
-    # from siteparsers.eztv_database import EZTV_Database
-
-    print('==============================================================================!!!')
-    # print(settings.as_dict(recursive=True, _values=False))
-    print(settings.as_pprint())
-    print('==============================================================================!!!')
+    settings = DevelopmentConfig(debug=True)
 
     host, port = settings.parse_server('host', 'port')
     run(host=host, port=port)
